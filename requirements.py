@@ -1,5 +1,5 @@
-xdk>=0.4.5
-requests>=2.32.5
-google-auth>=2.48.0
-google-genai>=1.47.0
-python-telegram-bot>=22.5
+xdk >= 0.4.5
+requests >= 2.32.5
+google-auth >= 2.48.0
+google-genai >= 1.47.0
+python-telegram-bot >= 22.5

@@ -30,6 +30,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
+
 def isAutorized(user_id):
     # Define a list of authorized user IDs
     authorized_users = [953853270]  # Replace with actual Telegram user IDs
@@ -39,6 +40,8 @@ def isAutorized(user_id):
 
 # Define a few command handlers. These usually take the two arguments update and
 # context.
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /start is issued."""
     print(update.effective_user.id)
@@ -78,7 +81,8 @@ def main() -> None:
     application.add_handler(CommandHandler("help", help_command))
 
     # on non command i.e message - echo the message on Telegram
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
+    application.add_handler(MessageHandler(
+        filters.TEXT & ~filters.COMMAND, echo))
 
     # Run the bot until the user presses Ctrl-C
     application.run_polling(allowed_updates=Update.ALL_TYPES)
