@@ -1,3 +1,4 @@
+import os
 import time
 import my_secrets
 import requests
