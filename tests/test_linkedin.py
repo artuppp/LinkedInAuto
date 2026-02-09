@@ -1,3 +1,4 @@
+import os
 import requests
 import secrets
 
@@ -77,8 +78,7 @@ elif type == "IMAGE":
             print(upload_response.text)
 elif type == "VIDEO":
     url_video = "https://api.linkedin.com/rest/videos?action=initializeUpload"
-    with open("/Users/loum/Desktop/LinkedIn/storage/videos/file_example_MP4_640_3MG.mp4", "rb") as video_file:
-        fileSizeBytes = len(video_file.read())
+    fileSizeBytes = os.path.getsize("/Users/loum/Desktop/LinkedIn/storage/videos/file_example_MP4_640_3MG.mp4")
 
     payload_video = {
         "initializeUploadRequest": {
