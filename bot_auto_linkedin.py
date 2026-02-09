@@ -178,6 +178,26 @@ async def post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("Error posting to LinkedIn. Please try again later.")
 
 
+async def regenerate_post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not isAutorized(update.effective_user.id):
+        await update.message.reply_text("Unauthorized user.")
+        return
+    idea_id = int(context.args[0])
+    idea = show_idea(idea_id)
+    if not idea:
+        await update.message.reply_text("Idea not found.")
+        return
+    while True:
+        result = generate_post(idea[1])
+        if result:
+            break
+        print("Generation failed, retrying in 1 minute...")
+        await asyncio.sleep(60)
+    #  Update the idea in the database with the generated post
+    update_idea_generate(idea_id, final_post=result)
+    await update.message.reply_text("Post regenerated successfully!")
+
+
 async def generate_update_post(idea_id):
     idea = show_idea(idea_id)
     while True:
@@ -204,6 +224,7 @@ def main() -> None:
     application.add_handler(CommandHandler("remove", remove_idea))
     application.add_handler(CommandHandler("search", search_idea))
     application.add_handler(CommandHandler("post", post))
+    application.add_handler(CommandHandler("regenerate", regenerate_post))
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     application.add_handler(MessageHandler(filters.VIDEO, handle_video))
 

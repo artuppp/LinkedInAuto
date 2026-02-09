@@ -1,5 +1,5 @@
 /.DS_Store
-/ideas.db
-/media.db
+/database/ideas.db
+/database/media.db
 /storage
 my_secrets.py
