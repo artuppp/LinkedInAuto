@@ -2,4 +2,4 @@
 /ideas.db
 /media.db
 /storage
-secrets.py
+my_secrets.py
