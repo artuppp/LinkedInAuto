@@ -219,6 +219,16 @@ async def handle_photo(update, context):
     if not isAutorized(update.effective_user.id):
         await update.message.reply_text("Unauthorized user.")
         return
+    
+    # Just upload 4 photos per idea (and NO videos)
+    media = get_media_for_idea(context.user_data.get("attach_to_idea"))
+    if any(m for m in media if m[1] == "video"):
+        await update.message.reply_text("You have already attached a video to this idea, so you cannot attach photos.")
+        return
+    if len(media) >= 4:
+        await update.message.reply_text("You have already attached 4 media items to this idea, which is the maximum allowed.")
+        return
+
     photo = update.message.photo[-1]
     file = await context.bot.get_file(photo.file_id)
 
@@ -240,6 +250,16 @@ async def handle_video(update, context):
     if not isAutorized(update.effective_user.id):
         await update.message.reply_text("Unauthorized user.")
         return
+    
+    # Just upload 1 video per idea (and NO photos)
+    media = get_media_for_idea(context.user_data.get("attach_to_idea"))
+    if any(m for m in media if m[1] == "photo"):
+        await update.message.reply_text("You have already attached a photo to this idea, so you cannot attach a video.")
+        return
+    if len(media) >= 1:
+        await update.message.reply_text("You have already attached a media item to this idea, which is the maximum allowed.")
+        return
+
     video = update.message.video
     file = await context.bot.get_file(video.file_id)
 
@@ -335,6 +355,7 @@ def upload_video_to_linkedin(video_path, author_urn, access_token):
     if response_finalize.status_code != 200:
         print(f"Error al finalizar la carga del video: {response_finalize.status_code}")
         print(response_finalize.text)
+        return None
     print("Video upload finalized successfully.")
     return urn
 
@@ -375,6 +396,7 @@ def generate_linkedin_post(idea_id):
         ))
     except Exception as e:
         print(f"Error generating LinkedIn post: {str(e)}")
+        return
     # Update the idea in the database as already posted and save the generated post
     update_idea_generate(idea_id=idea[0], final_post=response.text)
 
