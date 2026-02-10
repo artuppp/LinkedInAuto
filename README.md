@@ -95,7 +95,7 @@ mkdir -p storage/photos storage/videos database
 3. Run the bot:
 
 ```bash
-python bot_auto_linkedin.py
+python bot.py
 ```
 
 ---

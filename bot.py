@@ -1,15 +1,21 @@
 #!/usr/bin/env python
 import asyncio
 import my_secrets
+import schedule
 from database_helper import save_idea, get_ideas, remove_ideas, show_idea, save_media, get_first_not_posted_idea, get_media_for_idea, update_idea_as_posted, update_idea_generate, remove_media_for_idea
 from linkedin_helper import post_to_linkedin
 from gemini_helper import generate_post
 from telegram import ForceReply, Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
+# Days of the week to post scheduled posts
+days_to_post = ["tuesday", "thursday"]
+# Time of day to post scheduled posts (24-hour format, e.g., "14:30" for 2:30 PM)
+post_time = "11:00"
+
 
 def isAutorized(user_id):
-    authorized_users = [953853270]  # Just me!
+    authorized_users = [int(my_secrets.telegram_chat_id)]  # Just me!
     return user_id in authorized_users
 
 
@@ -167,15 +173,35 @@ async def post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
     # Get media for the idea
     idea = get_first_not_posted_idea()
-    media = get_media_for_idea(idea_id=idea[0])
-    # Post to LinkedIn
-    res = post_to_linkedin(text=idea[2], media=media)
-    # Update the idea as posted in the database
+    if not idea:
+        await update.message.reply_text("No ideas to post.")
+        return
+    res = send_post(idea_id=idea[0])
     if res:
         update_idea_as_posted(idea_id=idea[0])
         await update.message.reply_text("Post published successfully on your LinkedIn profile!")
     else:
-        await update.message.reply_text("Error posting to LinkedIn. Please try again later.")
+        await update.message.reply_text("Error posting to LinkedIn.")
+
+
+async def post_schedule(context: ContextTypes.DEFAULT_TYPE):
+    idea = get_first_not_posted_idea()
+    if not idea:
+        await context.bot.send_message(chat_id=my_secrets.telegram_chat_id, text="No ideas to post.")
+        return
+    res = send_post(idea_id=idea[0])
+    if res:
+        update_idea_as_posted(idea_id=idea[0])
+        await context.bot.send_message(chat_id=my_secrets.telegram_chat_id, text="Scheduled post published successfully on your LinkedIn profile!")
+    else:
+        await context.bot.send_message(chat_id=my_secrets.telegram_chat_id, text="Error posting scheduled post to LinkedIn.")
+
+
+def send_post(idea_id):
+    idea = show_idea(idea_id)
+    media = get_media_for_idea(idea_id=idea[0])
+    res = post_to_linkedin(text=idea[2], media=media)
+    return res
 
 
 async def regenerate_post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -210,6 +236,20 @@ async def generate_update_post(idea_id):
     update_idea_generate(idea_id, final_post=result)
 
 
+async def get_scheduled_post_time_days(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    days = ", ".join(days_to_post)
+    await update.message.reply_text(f"Scheduled posts will be published on {days} at {post_time}.")
+
+
+async def configure_schedule(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    new_days = context.args[0].split(",")
+    new_time = context.args[1]
+    global days_to_post, post_time
+    days_to_post = [d.strip().lower() for d in new_days]
+    post_time = new_time
+    await update.message.reply_text(f"Schedule updated! Scheduled posts will now be published on {', '.join(days_to_post)} at {post_time}.")
+
+
 def main() -> None:
     """Start the bot."""
     # Create the Application and pass it your bot's token.
@@ -227,9 +267,14 @@ def main() -> None:
     application.add_handler(CommandHandler("regenerate", regenerate_post))
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     application.add_handler(MessageHandler(filters.VIDEO, handle_video))
-
+    application.add_handler(CommandHandler(
+        "schedule", get_scheduled_post_time_days))
+    application.add_handler(CommandHandler(
+        "configure_schedule", configure_schedule))
     # Run the bot until the user presses Ctrl-C
     application.run_polling(allowed_updates=Update.ALL_TYPES)
+
+    # Schedule the post_schedule function to run thursdays and tuesdays at 11:00 am
 
 
 if __name__ == "__main__":
