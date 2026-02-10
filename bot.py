@@ -171,8 +171,13 @@ async def post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not isAutorized(update.effective_user.id):
         await update.message.reply_text("Unauthorized user.")
         return
-    # Get media for the idea
-    idea = get_first_not_posted_idea()
+    if not context.args:
+        idea = get_first_not_posted_idea()
+        if not idea:
+            await update.message.reply_text("No ideas to post.")
+            return
+    else:
+        idea = show_idea(int(context.args[0]))
     if not idea:
         await update.message.reply_text("No ideas to post.")
         return
