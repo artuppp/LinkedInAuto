@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 import asyncio
+import json
+import threading
+import time
 import my_secrets
 import schedule
 from database_helper import save_idea, get_ideas, remove_ideas, show_idea, save_media, get_first_not_posted_idea, get_media_for_idea, update_idea_as_posted, update_idea_generate, remove_media_for_idea
@@ -7,11 +10,6 @@ from linkedin_helper import post_to_linkedin
 from gemini_helper import generate_post
 from telegram import ForceReply, Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
-
-# Days of the week to post scheduled posts
-days_to_post = ["tuesday", "thursday"]
-# Time of day to post scheduled posts (24-hour format, e.g., "14:30" for 2:30 PM)
-post_time = "11:00"
 
 
 def isAutorized(user_id):
@@ -55,7 +53,7 @@ async def list_ideas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         return
     response = "Ideas:\n"
     for idea in ideas:
-        await update.message.reply_text(f"{idea[0]}: {idea[1]} ([{idea[3]}])")
+        await update.message.reply_text(f"{idea[0]}: {idea[1]} ([{idea[3]}]) POSTED: {'Yes' if idea[2] else 'No'}")
 
 
 async def list_media_all(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -94,7 +92,16 @@ async def search_idea(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     if not isAutorized(update.effective_user.id):
         await update.message.reply_text("Unauthorized user.")
         return
-    idea_id = int(context.args[0])
+    # Check that an ID was provided as an argument
+    if not context.args:
+        await update.message.reply_text("Please provide an idea ID to search for. Usage: /search <idea_id>")
+        return
+    # Check that the provided ID is a valid integer
+    try:
+        idea_id = int(context.args[0])
+    except ValueError:
+        await update.message.reply_text("Invalid idea ID. Please provide a valid integer.")
+        return
     idea = show_idea(idea_id)
     if idea:
         response = f"Idea found: {idea[1]} ([{idea[2]}]) (created at {idea[3]})"
@@ -177,7 +184,13 @@ async def post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             await update.message.reply_text("No ideas to post.")
             return
     else:
-        idea = show_idea(int(context.args[0]))
+        # If an ID was provided as an argument, post that specific idea
+        try:
+            idea_id = int(context.args[0])
+        except ValueError:
+            await update.message.reply_text("Invalid idea ID. Please provide a valid integer. Usage: /post <idea_id>")
+            return
+        idea = show_idea(idea_id)
     if not idea:
         await update.message.reply_text("No ideas to post.")
         return
@@ -189,17 +202,17 @@ async def post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("Error posting to LinkedIn.")
 
 
-async def post_schedule(context: ContextTypes.DEFAULT_TYPE):
+async def post_schedule(bot):
     idea = get_first_not_posted_idea()
     if not idea:
-        await context.bot.send_message(chat_id=my_secrets.telegram_chat_id, text="No ideas to post.")
+        await bot.send_message(chat_id=my_secrets.telegram_chat_id, text="No ideas to post.")
         return
     res = send_post(idea_id=idea[0])
     if res:
         update_idea_as_posted(idea_id=idea[0])
-        await context.bot.send_message(chat_id=my_secrets.telegram_chat_id, text="Scheduled post published successfully on your LinkedIn profile!")
+        await bot.send_message(chat_id=my_secrets.telegram_chat_id, text="Scheduled post published successfully on your LinkedIn profile!")
     else:
-        await context.bot.send_message(chat_id=my_secrets.telegram_chat_id, text="Error posting scheduled post to LinkedIn.")
+        await bot.send_message(chat_id=my_secrets.telegram_chat_id, text="Error posting scheduled post to LinkedIn.")
 
 
 def send_post(idea_id):
@@ -213,7 +226,14 @@ async def regenerate_post(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if not isAutorized(update.effective_user.id):
         await update.message.reply_text("Unauthorized user.")
         return
-    idea_id = int(context.args[0])
+    if not context.args:
+        await update.message.reply_text("Please provide an idea ID to regenerate. Usage: /regenerate <idea_id>")
+        return
+    try:
+        idea_id = int(context.args[0])
+    except (ValueError):
+        await update.message.reply_text("Please provide a valid idea ID to regenerate. Usage: /regenerate <idea_id>")
+        return
     idea = show_idea(idea_id)
     if not idea:
         await update.message.reply_text("Idea not found.")
@@ -242,17 +262,73 @@ async def generate_update_post(idea_id):
 
 
 async def get_scheduled_post_time_days(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    days = ", ".join(days_to_post)
-    await update.message.reply_text(f"Scheduled posts will be published on {days} at {post_time}.")
+    if not isAutorized(update.effective_user.id):
+        await update.message.reply_text("Unauthorized user.")
+        return
+    with open("schedule_config.json", "r") as f:
+        config = json.load(f)
+    days = config.get("days", [])
+    time_str = config.get("time", "00:00")
+    await update.message.reply_text(f"Scheduled posts are currently set to be published on {', '.join(days)} at {time_str}. You can change this schedule with the /configure_schedule command.")
 
 
 async def configure_schedule(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not isAutorized(update.effective_user.id):
+        await update.message.reply_text("Unauthorized user.")
+        return
+    # Expecting two arguments: a comma-separated list of days and a time in HH:MM format
+    if len(context.args) != 2:
+        await update.message.reply_text("Usage: /configure_schedule <days> <time>\nExample: /configure_schedule Tuesday,Thursday 14:30")
+        return
     new_days = context.args[0].split(",")
+    print(
+        f"Configuring schedule with days: {new_days} and time: {context.args[1]}")
+    # Check that days are valid
+    valid_days = {"monday", "tuesday", "wednesday",
+                  "thursday", "friday", "saturday", "sunday"}
+    for d in new_days:
+        if d.strip().lower() not in valid_days:
+            await update.message.reply_text(f"Invalid day: {d}. Please enter valid days of the week.")
+            return
+    # Check that time is valid
+    try:
+        time.strptime(context.args[1], "%H:%M")
+    except ValueError:
+        await update.message.reply_text("Invalid time format. Please enter time in HH:MM format.")
+        return
     new_time = context.args[1]
-    global days_to_post, post_time
-    days_to_post = [d.strip().lower() for d in new_days]
-    post_time = new_time
-    await update.message.reply_text(f"Schedule updated! Scheduled posts will now be published on {', '.join(days_to_post)} at {post_time}.")
+    # Persist the schedule configuration in a json file
+    with open("schedule_config.json", "w") as f:
+        json.dump({"days": new_days, "time": new_time}, f)
+    setup_schedule(bot=context.bot)
+    await update.message.reply_text(f"Schedule updated! Scheduled posts will be published on {', '.join(new_days)} at {new_time}.")
+
+
+def setup_schedule(bot):
+    schedule.clear()
+    with open("schedule_config.json", "r") as f:
+        config = json.load(f)
+    days = [d.strip().lower() for d in config.get("days", [])]
+    time_str = config.get("time", "00:00")
+    for day in days:
+        getattr(schedule.every(), day).at(time_str).do(
+            job_wrapper, bot=bot
+        )
+    print("Initial scheduled jobs:", schedule.get_jobs())
+
+
+def run_scheduler():
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
+
+
+def job_wrapper(bot):
+    """Puente para ejecutar lo asíncrono dentro de lo síncrono"""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(post_schedule(bot))
+    loop.close()
 
 
 def main() -> None:
@@ -260,6 +336,11 @@ def main() -> None:
     # Create the Application and pass it your bot's token.
     application = Application.builder().token(
         my_secrets.telegram_bot_token).build()
+
+    # setup_schedule(bot=application.bot)
+
+    t = threading.Thread(target=run_scheduler, daemon=True)
+    t.start()
 
     # on different commands - answer in Telegram
     application.add_handler(CommandHandler("start", start))
@@ -278,8 +359,6 @@ def main() -> None:
         "configure_schedule", configure_schedule))
     # Run the bot until the user presses Ctrl-C
     application.run_polling(allowed_updates=Update.ALL_TYPES)
-
-    # Schedule the post_schedule function to run thursdays and tuesdays at 11:00 am
 
 
 if __name__ == "__main__":
