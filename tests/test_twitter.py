@@ -12,7 +12,8 @@ import os
 import json
 from xdk import Client
 from xdk.oauth1_auth import OAuth1
-import my_secrets
+# import my_secrets
+import my_secrets_env as my_secrets
 import time
 import requests
 

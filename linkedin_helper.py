@@ -1,6 +1,7 @@
 import os
 import time
-import my_secrets
+# import my_secrets
+import my_secrets_env as my_secrets
 import requests
 
 # LinkedIn API credentials and endpoints

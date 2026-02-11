@@ -132,6 +132,15 @@ def update_idea_generate(idea_id, final_post):
 def update_idea_as_posted(idea_id):
     conn = sqlite3.connect(ideas_database)
     cursor = conn.cursor()
+    # Remove media files associated with the idea to free up storage space
+    cursor.execute("SELECT path FROM idea_media WHERE idea_id = ?", (idea_id,))
+    media_files = cursor.fetchall()
+    for media_file in media_files:
+        path = media_file[0]
+        if os.path.exists(path):
+            os.remove(path)
+    # Mark the idea as posted and remove media records from the database
+    cursor.execute("DELETE FROM idea_media WHERE idea_id = ?", (idea_id,))
     cursor.execute(
         "UPDATE ideas SET alredy_posted = 1 WHERE id = ?", (idea_id,))
     conn.commit()

@@ -1,4 +1,5 @@
-import my_secrets
+# import my_secrets
+import my_secrets_env as my_secrets
 from google import genai
 
 client = genai.Client(api_key=my_secrets.gemini_key)
