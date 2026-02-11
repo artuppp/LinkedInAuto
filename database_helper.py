@@ -143,8 +143,6 @@ def update_idea_as_posted(idea_id):
     conn.close()
     conn = sqlite3.connect(ideas_database)
     cursor = conn.cursor()
-    # Mark the idea as posted and remove media records from the database
-    cursor.execute("DELETE FROM idea_media WHERE idea_id = ?", (idea_id,))
     cursor.execute(
         "UPDATE ideas SET alredy_posted = 1 WHERE id = ?", (idea_id,))
     conn.commit()
