@@ -5,6 +5,52 @@ ideas_database = "database/ideas.db"
 media_database = "database/media.db"
 
 
+def init_ideas_db():
+    conn = sqlite3.connect(ideas_database)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS ideas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            texto TEXT NOT NULL,
+            alredy_posted BOOLEAN DEFAULT 0,
+            final_post TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
+
+    conn.commit()
+    conn.close()
+
+
+def init_media_db():
+    conn = sqlite3.connect(media_database)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        CREATE TABLE idea_media (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            idea_id INTEGER NOT NULL,
+            type TEXT NOT NULL,
+            path TEXT NOT NULL,
+            original_file_id TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (idea_id) REFERENCES ideas(id) ON DELETE CASCADE
+    );
+    """)
+    conn.commit()
+    conn.close()
+
+
+def initialize_database():
+    if not os.path.exists("database"):
+        os.makedirs("database")
+    if not os.path.exists(ideas_database):
+        init_ideas_db()
+    if not os.path.exists(media_database):
+        init_media_db()
+
+
 def save_idea(idea):
     conn = sqlite3.connect(ideas_database)
     cursor = conn.cursor()

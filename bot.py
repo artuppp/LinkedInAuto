@@ -3,9 +3,11 @@ import asyncio
 import json
 import threading
 import time
-import my_secrets
+import os
+import my_secrets_env as my_secrets
+# import my_secrets
 import schedule
-from database_helper import save_idea, get_ideas, remove_ideas, show_idea, save_media, get_first_not_posted_idea, get_media_for_idea, update_idea_as_posted, update_idea_generate, remove_media_for_idea
+from database_helper import save_idea, get_ideas, remove_ideas, show_idea, save_media, get_first_not_posted_idea, get_media_for_idea, update_idea_as_posted, update_idea_generate, remove_media_for_idea, initialize_database
 from linkedin_helper import post_to_linkedin
 from gemini_helper import generate_post
 from telegram import ForceReply, Update
@@ -331,9 +333,26 @@ def job_wrapper(bot):
     loop.close()
 
 
+def initialize_all():
+    # If storage/photos and storage/videos folders don't exist, create them
+    if not os.path.exists("storage"):
+        os.makedirs("storage")
+    if not os.path.exists("storage/photos"):
+        os.makedirs("storage/photos")
+    if not os.path.exists("storage/videos"):
+        os.makedirs("storage/videos")
+    # Check if schedule_config.json file exists, if not create it with default values
+    if not os.path.exists("schedule_config.json"):
+        with open("schedule_config.json", "w") as f:
+            json.dump({"days": [], "time": "00:00"}, f)
+    # Check if database files exist, if not create them
+    initialize_database()
+
+
 def main() -> None:
     """Start the bot."""
-    # Create the Application and pass it your bot's token.
+    # Initialize storage folders, schedule config file and databases
+    initialize_all()
     application = Application.builder().token(
         my_secrets.telegram_bot_token).build()
 
