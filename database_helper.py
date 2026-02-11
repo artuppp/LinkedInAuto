@@ -1,6 +1,7 @@
 import sqlite3
 import os
 
+database_folder = "/data/database"
 ideas_database = "/data/database/ideas.db"
 media_database = "/data/database/media.db"
 
@@ -43,8 +44,8 @@ def init_media_db():
 
 
 def initialize_database():
-    if not os.path.exists("database"):
-        os.makedirs("database")
+    if not os.path.exists(database_folder):
+        os.makedirs(database_folder)
     if not os.path.exists(ideas_database):
         init_ideas_db()
     if not os.path.exists(media_database):
