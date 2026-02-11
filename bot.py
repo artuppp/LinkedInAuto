@@ -131,7 +131,7 @@ async def handle_photo(update, context):
     file = await context.bot.get_file(photo.file_id)
 
     idea_id = context.user_data.get("attach_to_idea")
-    path = f"storage/photos/idea_{idea_id}_{photo.file_unique_id}.jpg"
+    path = f"/data/storage/photos/idea_{idea_id}_{photo.file_unique_id}.jpg"
 
     await file.download_to_drive(path)
 
@@ -162,7 +162,7 @@ async def handle_video(update, context):
     file = await context.bot.get_file(video.file_id)
 
     idea_id = context.user_data.get("attach_to_idea")
-    path = f"storage/videos/idea_{idea_id}_{video.file_unique_id}.mp4"
+    path = f"/data/storage/videos/idea_{idea_id}_{video.file_unique_id}.mp4"
 
     await file.download_to_drive(path)
 
@@ -335,12 +335,12 @@ def job_wrapper(bot):
 
 def initialize_all():
     # If storage/photos and storage/videos folders don't exist, create them
-    if not os.path.exists("storage"):
-        os.makedirs("storage")
-    if not os.path.exists("storage/photos"):
-        os.makedirs("storage/photos")
-    if not os.path.exists("storage/videos"):
-        os.makedirs("storage/videos")
+    if not os.path.exists("/data/storage"):
+        os.makedirs("/data/storage")
+    if not os.path.exists("/data/storage/photos"):
+        os.makedirs("/data/storage/photos")
+    if not os.path.exists("/data/storage/videos"):
+        os.makedirs("/data/storage/videos")
     # Check if schedule_config.json file exists, if not create it with default values
     if not os.path.exists("schedule_config.json"):
         with open("schedule_config.json", "w") as f:

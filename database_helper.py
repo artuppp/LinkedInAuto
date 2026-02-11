@@ -1,8 +1,8 @@
 import sqlite3
 import os
 
-ideas_database = "database/ideas.db"
-media_database = "database/media.db"
+ideas_database = "/data/database/ideas.db"
+media_database = "/data/database/media.db"
 
 
 def init_ideas_db():
