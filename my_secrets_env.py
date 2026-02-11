@@ -1,6 +1,6 @@
 import os
 
-aemini_key = os.getenv("GEMINI_KEY")
+gemini_key = os.getenv("GEMINI_KEY")
 linkedin_access_token = os.getenv("LINKEDIN_ACCESS_TOKEN")
 linkedin_user_urn = os.getenv("LINKEDIN_USER_URN")
 telegram_bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
