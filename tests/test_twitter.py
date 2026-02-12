@@ -1,104 +1,59 @@
-"""
-Create Tweet - X API v2
-=======================
-Endpoint: POST https://api.x.com/2/tweets
-Docs: https://developer.x.com/en/docs/twitter-api/tweets/manage-tweets/api-reference/post-tweets
+import tweepy
+import my_secrets
 
-Authentication: OAuth 2.0 (User Context)
-Required env vars: CLIENT_ID, CLIENT_SECRET
-"""
+# 1. Tus credenciales (Cópialas desde el Dashboard de Twitter Developer)
+api_key = my_secrets.twitter_api_key
+api_secret = my_secrets.twitter_api_key_secret
+access_token = my_secrets.twitter_access_token
+access_token_secret = my_secrets.twitter_access_token_secret
 
-import os
-import json
-from xdk import Client
-from xdk.oauth1_auth import OAuth1
-# import my_secrets
-import my_secrets_env as my_secrets
-import time
-import requests
+# CAMBIA ESTO: "texto", "imagen" o "video"
+TIPO_POST = "imagen"
+# Nombre de tu archivo con extensión
+RUTA_ARCHIVO = "/home/arturo/Desktop/LinkedInAuto/LinkedInAuto/storage/photos/WhatsApp Image 2026-01-21 at 10.17.29.jpeg"
 
-# Set the scopes
-scopes = ["tweet.read", "tweet.write",
-          "users.read", "offline.access", "media.write"]
+# --- AUTENTICACIÓN ---
+# v1.1 (Necesaria para subir archivos)
+auth = tweepy.OAuth1UserHandler(
+    api_key, api_secret, access_token, access_token_secret)
+api_v1 = tweepy.API(auth)
 
-MEDIA_ENDPOINT_URL = 'https://api.x.com/1.1/media/upload'
-
-# Be sure to replace the text with the text you wish to Tweet.
-# You can also add parameters to post polls, quote Tweets, Tweet with reply settings, and Tweet to Super Followers in addition to other features.
-payload = {"text": "Hello world!"}
-
-type = "VIDEO"  # or "IMAGE" or "MULTIIMAGE" or "TEXT"
-
-headers = {
-    "Authorization": "Bearer {}".format(my_secrets.twitter_access_token),
-    "Content-Type": "application/json",
-}
+# v2 (Necesaria para publicar el tuit)
+client_v2 = tweepy.Client(
+    api_key, api_secret, access_token, access_token_secret)
 
 
-def main():
-    # Step 1: Create PKCE instance
-    auth = OAuth1(
-        api_key=my_secrets.twitter_api_key,
-        api_secret=my_secrets.twitter_api_key_secret,
-        access_token=my_secrets.twitter_access_token,
-        access_token_secret=my_secrets.twitter_access_token_secret,
-        callback="http://localhost:8000/callback",
-    )
+def publicar():
+    # Esto verifica si tus credenciales son válidas para la API v1.1
+    try:
+        user = api_v1.verify_credentials()
+        print(f"Autenticación exitosa: Bienvenido {user.screen_name}")
+    except Exception as e:
+        print(f"Error de autenticación: {e}")
+    try:
+        media_ids = []
 
-    # Step 5: Create client
-    client = Client(auth=auth)
+        if TIPO_POST in ["imagen", "video"]:
+            print(f"Subiendo {TIPO_POST}...")
+            # Subida del archivo a la v1.1
+            media = api_v1.media_upload(filename=RUTA_ARCHIVO)
+            media_ids.append(media.media_id)
+            texto_tuit = f"Tuit con {TIPO_POST} desde Python 🐍"
+        else:
+            texto_tuit = "Tuit de solo texto desde Python 🐍"
 
-    if type == "VIDEO":
-        path = "/home/arturo/Desktop/LinkedInAuto/LinkedInAuto/storage/videos/file_example_MP4_1280_10MG.mp4"
-        fileSizeBytes = os.path.getsize(path)
+        # Publicar en v2 vinculando el media_id si existe
+        if media_ids:
+            response = client_v2.create_tweet(
+                text=texto_tuit, media_ids=media_ids)
+        else:
+            response = client_v2.create_tweet(text=texto_tuit)
 
-        # 1. INIT (video/mp4, amplify_video)
-        request_data = {
-            "media_type": "video/mp4",
-            "total_bytes": fileSizeBytes,
-            "media_category": "tweet_video",
-        }
+        print(f"¡Éxito! Tuit publicado con ID: {response.data['id']}")
 
-        response = client.media.initialize_upload(body=request_data)
-        print(json.dumps(response.data, indent=4, sort_keys=True))
-        media_id = response.data.get("id")
-
-        # 2. APPEND
-        segment_id = 0
-        bytes_sent = 0
-        with open(path, "rb") as f:
-            while bytes_sent < fileSizeBytes:
-                chunk = f.read(4 * 1024 * 1024)  # 4MB per chunk
-                files = {"media": chunk}
-                request_data = {
-                    "media_id": media_id,
-                    "segment_index": segment_id,
-                    "media": chunk,
-                }
-                req = client.media.append_upload(media_id, request_data)
-                print("APPEND response for segment {}: {}".format(
-                    segment_id, req.status_code))
-                segment_id += 1
-                bytes_sent = f.tell()
-                print("Uploaded {} bytes".format(bytes_sent))
-
-        # 3. FINALIZE
-        req = client.media.finalize_upload(media_id=media_id)
-        if req.status_code != 200:
-            print("FINALIZE request failed: {}".format(req.text))
-            return
-        processing_info = req.json().get("data", {}).get("processing_info", {})
-        # 4. POST TWEET
-        payload["media"] = {"media_ids": [media_id]}
-        response = client.posts.create(body=payload)
-        print(json.dumps(response.data, indent=4, sort_keys=True))
-
-    elif type == "TEXT":
-        # Step 6: Create the tweet
-        response = client.posts.create(body=payload)
-
-        print(json.dumps(response.data, indent=4, sort_keys=True))
+    except Exception as e:
+        print(f"Error: {e}")
 
 
 if __name__ == "__main__":
-    main()
+    publicar()  # En la API v2 usamos tweepy.Client
