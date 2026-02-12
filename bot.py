@@ -9,6 +9,7 @@ import my_secrets_env as my_secrets
 import schedule
 from database_helper import save_idea, get_ideas, remove_ideas, show_idea, save_media, get_first_not_posted_idea, get_media_for_idea, update_idea_as_posted, update_idea_generate, remove_media_for_idea, initialize_database
 from linkedin_helper import post_to_linkedin
+from twitter_helper import post_to_twitter
 from gemini_helper import generate_post
 from telegram import ForceReply, Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
@@ -196,8 +197,8 @@ async def post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not idea:
         await update.message.reply_text("No ideas to post.")
         return
-    res = send_post(idea_id=idea[0])
-    if res:
+    res_linkedin, res_twitter = send_post(idea_id=idea[0])
+    if res_linkedin and res_twitter:
         update_idea_as_posted(idea_id=idea[0])
         await update.message.reply_text("Post published successfully on your LinkedIn profile!")
     else:
@@ -209,8 +210,8 @@ async def post_schedule(bot):
     if not idea:
         await bot.send_message(chat_id=my_secrets.telegram_chat_id, text="No ideas to post.")
         return
-    res = send_post(idea_id=idea[0])
-    if res:
+    res_linkedin, res_twitter = send_post(idea_id=idea[0])
+    if res_linkedin and res_twitter:
         update_idea_as_posted(idea_id=idea[0])
         await bot.send_message(chat_id=my_secrets.telegram_chat_id, text="Scheduled post published successfully on your LinkedIn profile!")
     else:
@@ -220,8 +221,9 @@ async def post_schedule(bot):
 def send_post(idea_id):
     idea = show_idea(idea_id)
     media = get_media_for_idea(idea_id=idea[0])
-    res = post_to_linkedin(text=idea[2], media=media)
-    return res
+    res_linkedin = post_to_linkedin(text=idea[2], media=media)
+    res_twitter = post_to_twitter(text=idea[2], media=media)
+    return res_linkedin, res_twitter
 
 
 async def regenerate_post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -326,7 +328,7 @@ def run_scheduler():
 
 
 def job_wrapper(bot):
-    """Puente para ejecutar lo asíncrono dentro de lo síncrono"""
+    # Bridge function to run the async post_schedule in the synchronous schedule job
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(post_schedule(bot))
@@ -342,8 +344,8 @@ def initialize_all():
     if not os.path.exists("/data/storage/videos"):
         os.makedirs("/data/storage/videos")
     # Check if schedule_config.json file exists, if not create it with default values
-    if not os.path.exists("schedule_config.json"):
-        with open("schedule_config.json", "w") as f:
+    if not os.path.exists("/data/schedule_config.json"):
+        with open("/data/schedule_config.json", "w") as f:
             json.dump({"days": [], "time": "00:00"}, f)
     # Check if database files exist, if not create them
     initialize_database()

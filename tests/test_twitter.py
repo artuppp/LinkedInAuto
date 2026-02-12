@@ -1,5 +1,5 @@
 import tweepy
-import my_secrets
+import my_secrets_env as my_secrets
 
 # 1. Your credentials (replace with your actual credentials)
 api_key = my_secrets.twitter_api_key
