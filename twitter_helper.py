@@ -21,14 +21,14 @@ client_v2 = tweepy.Client(
 twitter_max_characters = my_secrets.twitter_max_characters
 
 
-def post_to_twitter(original_text, media):
+def post_to_twitter(text, media):
     # If text is longer than 280 characters, condense it using Gemini API
-    if len(original_text) >= twitter_max_characters:
+    if len(text) >= twitter_max_characters:
         print("Text is too long for X, condensing with Gemini API...")
-        text = original_text
         while True:
-            text = condense_for_x(original_text)
-            if text and len(text) < twitter_max_characters:
+            res = condense_for_x(text)
+            if res and len(res) < twitter_max_characters:
+                text = res
                 break
 
     try:
