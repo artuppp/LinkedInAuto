@@ -277,7 +277,7 @@ async def get_scheduled_post_time_days(update: Update, context: ContextTypes.DEF
     if not isAutorized(update.effective_user.id):
         await update.message.reply_text("Unauthorized user.")
         return
-    with open("schedule_config.json", "r") as f:
+    with open("/data/schedule_config.json", "r") as f:
         config = json.load(f)
     days = config.get("days", [])
     time_str = config.get("time", "00:00")
@@ -310,7 +310,7 @@ async def configure_schedule(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return
     new_time = context.args[1]
     # Persist the schedule configuration in a json file
-    with open("schedule_config.json", "w") as f:
+    with open("/data/schedule_config.json", "w") as f:
         json.dump({"days": new_days, "time": new_time}, f)
     setup_schedule(bot=context.bot)
     await update.message.reply_text(f"Schedule updated! Scheduled posts will be published on {', '.join(new_days)} at {new_time}.")
@@ -318,7 +318,7 @@ async def configure_schedule(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 def setup_schedule(bot):
     schedule.clear()
-    with open("schedule_config.json", "r") as f:
+    with open("/data/schedule_config.json", "r") as f:
         config = json.load(f)
     days = [d.strip().lower() for d in config.get("days", [])]
     time_str = config.get("time", "00:00")

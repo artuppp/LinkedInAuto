@@ -1,7 +1,6 @@
-import os
 import my_secrets_env as my_secrets
 import tweepy
-import requests
+from gemini_helper import condense_for_x
 
 # 1. Your credentials (replace with your actual credentials)
 api_key = my_secrets.twitter_api_key
@@ -19,8 +18,19 @@ api_v1 = tweepy.API(auth)
 client_v2 = tweepy.Client(
     consumer_key=api_key, consumer_secret=api_secret, access_token=access_token, access_token_secret=access_token_secret)
 
+twitter_max_characters = my_secrets.twitter_max_characters
 
-def post_to_twitter(text, media):
+
+def post_to_twitter(original_text, media):
+    # If text is longer than 280 characters, condense it using Gemini API
+    if len(original_text) >= twitter_max_characters:
+        print("Text is too long for X, condensing with Gemini API...")
+        text = original_text
+        while True:
+            text = condense_for_x(original_text)
+            if text and len(text) < twitter_max_characters:
+                break
+
     try:
         user = api_v1.verify_credentials()
         print(f"Authentication successful: Welcome {user.screen_name}")

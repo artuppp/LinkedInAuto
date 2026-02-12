@@ -14,3 +14,5 @@ twitter_api_key_secret = os.getenv("TWITTER_API_KEY_SECRET")
 twitter_bearer_token = os.getenv("TWITTER_BEARER_TOKEN")
 twitter_client_secret_id = os.getenv("TWITTER_CLIENT_SECRET_ID")
 twitter_client_id = os.getenv("TWITTER_CLIENT_ID")
+
+twitter_max_characters = int(os.getenv("TWITTER_MAX_CHARACTERS", "280"))

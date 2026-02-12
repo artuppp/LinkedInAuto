@@ -4,6 +4,38 @@ from google import genai
 
 client = genai.Client(api_key=my_secrets.gemini_key)
 
+twitter_max_characters = my_secrets.twitter_max_characters
+
+
+def condense_for_x(original_post):
+    # Pic a LinkedIn post and condense it to a single tweet using Gemini API
+    try:
+        response = client.models.generate_content(
+            model="gemini-3-flash-preview",
+            contents=(
+                "I will provide a LinkedIn post. Your task is to rewrite it as a single tweet. "
+                "STRICT RULES: "
+                "1. The output must be under 250 characters. "
+                "2. Maintain the core insight and professional tone. "
+                "3. Use a maximum of 2 relevant hashtags at the end. "
+                "4. Return ONLY the rewritten text, no quotes or intro. "
+                "5. Keep it in English.\n\n"
+                f"Original Post: {original_post}"
+            ))
+
+        condensed_text = response.text.strip()
+
+        # Security check: ensure the text is not too long for X (280 characters)
+        if len(condensed_text) > twitter_max_characters:
+            condensed_text = condensed_text[:twitter_max_characters-3] + "..."
+
+        print("Condensed text for X:", condensed_text)
+        return condensed_text
+
+    except Exception as e:
+        print(f"Error condensing text: {str(e)}")
+        return None
+
 
 def generate_post(topic):
     # Generate LinkedIn post content using Gemini API
