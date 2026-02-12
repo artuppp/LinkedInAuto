@@ -66,7 +66,7 @@ def post_to_twitter(text, media):
         else:
             response = client_v2.create_tweet(text=text)
 
-        return response.status_code
+        return response
 
     except Exception as e:
         print(f"Error: {e}")

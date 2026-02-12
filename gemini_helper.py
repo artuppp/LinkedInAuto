@@ -15,7 +15,7 @@ def condense_for_x(original_post):
             contents=(
                 "I will provide a LinkedIn post. Your task is to rewrite it as a single tweet. "
                 "STRICT RULES: "
-                "1. The output must be under 250 characters. "
+                f"1. The output must be under {twitter_max_characters} characters. "
                 "2. Maintain the core insight and professional tone. "
                 "3. Use a maximum of 2 relevant hashtags at the end. "
                 "4. Return ONLY the rewritten text, no quotes or intro. "
