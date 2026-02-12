@@ -2,3 +2,4 @@
 /database/*.db
 /storage
 my_secrets.py
+/tests/my_secrets.py
