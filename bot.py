@@ -215,18 +215,22 @@ async def post_schedule(bot):
         await bot.send_message(chat_id=my_secrets.telegram_chat_id, text="No ideas to post.")
         return
     res_linkedin, res_twitter = send_post(idea_id=idea[0])
-    if res_linkedin and res_twitter:
+    if res_linkedin:
         update_idea_as_posted(idea_id=idea[0])
         await bot.send_message(chat_id=my_secrets.telegram_chat_id, text="Scheduled post published successfully on your LinkedIn profile!")
     else:
         await bot.send_message(chat_id=my_secrets.telegram_chat_id, text="Error posting scheduled post to LinkedIn.")
+    if res_twitter:
+        await bot.send_message(chat_id=my_secrets.telegram_chat_id, text="Scheduled post published successfully on your Twitter profile!")
+    else:
+        await bot.send_message(chat_id=my_secrets.telegram_chat_id, text="Error posting scheduled post to Twitter.")
 
 
 def send_post(idea_id):
     idea = show_idea(idea_id)
     media = get_media_for_idea(idea_id=idea[0])
-    res_linkedin = post_to_linkedin(text=idea[2], media=media)
     res_twitter = post_to_twitter(text=idea[2], media=media)
+    res_linkedin = post_to_linkedin(text=idea[2], media=media)
     return res_linkedin, res_twitter
 
 
