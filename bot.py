@@ -198,11 +198,15 @@ async def post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("No ideas to post.")
         return
     res_linkedin, res_twitter = send_post(idea_id=idea[0])
-    if res_linkedin and res_twitter:
+    if res_linkedin:
         update_idea_as_posted(idea_id=idea[0])
         await update.message.reply_text("Post published successfully on your LinkedIn profile!")
     else:
         await update.message.reply_text("Error posting to LinkedIn.")
+    if res_twitter:
+        await update.message.reply_text("Post published successfully on your Twitter profile!")
+    else:
+        await update.message.reply_text("Error posting to Twitter.")
 
 
 async def post_schedule(bot):

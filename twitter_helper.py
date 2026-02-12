@@ -21,9 +21,9 @@ client_v2 = tweepy.Client(
 
 
 def post_to_twitter(text, media):
-    if len(media) > 0:
-        try:
-            media_ids = []
+    try:
+        media_ids = []
+        if len(media) > 0:
             video = next((m for m in media if m[1] == "video"), None)
             if video:
                 # Uploading the video to v1.1
@@ -37,15 +37,15 @@ def post_to_twitter(text, media):
                     tw_media = api_v1.media_upload(filename=m[0])
                     media_ids.append(tw_media.media_id)
 
-            # Posting on v2 linking the media_id if it exists
-            if media_ids:
-                response = client_v2.create_tweet(
-                    text=text, media_ids=media_ids)
-            else:
-                response = client_v2.create_tweet(text=text)
+        # Posting on v2 linking the media_id if it exists
+        if media_ids:
+            response = client_v2.create_tweet(
+                text=text, media_ids=media_ids)
+        else:
+            response = client_v2.create_tweet(text=text)
 
-            return response.status_code
+        return response.status_code
 
-        except Exception as e:
-            print(f"Error: {e}")
-            return None
+    except Exception as e:
+        print(f"Error: {e}")
+        return None
