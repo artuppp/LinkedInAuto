@@ -50,13 +50,13 @@ def post_to_twitter(text, media):
             if video:
                 # Uploading the video to v1.1
                 print(f"Uploading video {video[0]}...")
-                tw_media = api_v1.media_upload(filename=video[0])
+                tw_media = api_v1.media_upload(filename=video[2])
                 media_ids.append(tw_media.media_id)
             else:
                 for m in media:
                     # Uploading the image to v1.1
                     print(f"Uploading {m[1]} {m[0]}...")
-                    tw_media = api_v1.media_upload(filename=m[0])
+                    tw_media = api_v1.media_upload(filename=m[2])
                     media_ids.append(tw_media.media_id)
 
         # Posting on v2 linking the media_id if it exists
