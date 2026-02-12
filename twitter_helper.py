@@ -22,6 +22,18 @@ client_v2 = tweepy.Client(
 
 def post_to_twitter(text, media):
     try:
+        user = api_v1.verify_credentials()
+        print(f"Authentication successful: Welcome {user.screen_name}")
+    except Exception as e:
+        print(f"Authentication error: {e}")
+    # Verify credentials for API v2
+    try:
+        response = client_v2.get_me()
+        print(
+            f"Authentication v2 successful: Welcome {response.data['username']}")
+    except Exception as e:
+        print(f"Authentication v2 error: {e}")
+    try:
         media_ids = []
         if len(media) > 0:
             video = next((m for m in media if m[1] == "video"), None)
