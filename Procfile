@@ -1,1 +1,1 @@
-worker: gunicorn main:app --bind 0.0.0.0:8080 & python bot.py
+worker: python bot.py
