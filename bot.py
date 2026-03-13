@@ -18,16 +18,9 @@ from flask import Flask
 app = Flask(__name__)
 
 @app.route('/')
-def home():
-    return "LinkedIn Post Bot is running!"
+def health_check():
+    return "OK", 200
 
-def run():
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host='0.0.0.0', port=port)
-
-def keep_alive():
-    t = threading.Thread(target=run)
-    t.start()
 
 def isAutorized(user_id):
     authorized_users = [int(my_secrets.telegram_chat_id)]  # Just me!
@@ -379,9 +372,6 @@ def main() -> None:
     initialize_all()
     application = Application.builder().token(
         my_secrets.telegram_bot_token).build()
-
-    # For maintaining alive the bot in some platforms
-    keep_alive()
 
     t = threading.Thread(target=run_scheduler, daemon=True)
     t.start()
