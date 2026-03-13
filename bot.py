@@ -13,7 +13,21 @@ from twitter_helper import post_to_twitter
 from gemini_helper import generate_post
 from telegram import ForceReply, Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
+from flask import Flask
 
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "LinkedIn Post Bot is running!"
+
+def run():
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port)
+
+def keep_alive():
+    t = threading.Thread(target=run)
+    t.start()
 
 def isAutorized(user_id):
     authorized_users = [int(my_secrets.telegram_chat_id)]  # Just me!
@@ -366,7 +380,8 @@ def main() -> None:
     application = Application.builder().token(
         my_secrets.telegram_bot_token).build()
 
-    # setup_schedule(bot=application.bot)
+    # For maintaining alive the bot in some platforms
+    keep_alive()
 
     t = threading.Thread(target=run_scheduler, daemon=True)
     t.start()
